@@ -42,7 +42,7 @@ const userSchema = new Schema({
 
     }, 
 
-    refershToken:{
+    refreshToken:{
         type:String,
     },
 
@@ -62,7 +62,7 @@ userSchema.pre("save", async function (next){
 
 })
 
-userSchema.methods.isPasswordCorrect = async function(){
+userSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password, this.password)
 }
 
@@ -89,7 +89,7 @@ userSchema.methods.generateAccessToken = function(){
 };
 
 
-userSchema.methods.generateRefershToken = function (){
+userSchema.methods.generateRefreshToken = function (){
 
     return jwt.sign(
 
@@ -97,10 +97,10 @@ userSchema.methods.generateRefershToken = function (){
             _id:this._id
         },
 
-        process.env.REFERSH_TOKEN_CODE,
+        process.env.REFRESH_TOKEN_CODE,
 
         {
-            expiresIn:REFERSH_TOKEN_EXPIRY
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
         }
 
     )
