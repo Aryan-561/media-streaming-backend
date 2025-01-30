@@ -1,5 +1,7 @@
 import {v2 as cloudinary} from "cloudinary"
 import fs from "fs"
+import {asyncHandler} from "./asyncHandler.js"
+import { ApiError } from "./ApiErr.js";
 
 cloudinary.config(
     {
@@ -21,6 +23,7 @@ const uploadOnCloudinary = async function(localFilePath){
 
         // console.log("File is upload on cloudinary: ",response.url);
         fs.unlinkSync(localFilePath)
+        console.log(response)
         return response
     } catch (error) {
         fs.unlinkSync(localFilePath);
@@ -28,5 +31,16 @@ const uploadOnCloudinary = async function(localFilePath){
     }
 }
 
+const deleteOnCloudinary = asyncHandler(async(url)=>{
+    const publicId = url.split('/').pop().split(".")[0];
 
-export {uploadOnCloudinary};
+    const response = await cloudinary.uploader.destroy(publicId);
+    
+    if(response.result !== "ok"){
+        throw new ApiError(400, "something is wrong while deleting in file")
+    }
+
+    
+})
+
+export {uploadOnCloudinary, deleteOnCloudinary};
