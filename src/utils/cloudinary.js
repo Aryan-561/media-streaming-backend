@@ -17,7 +17,8 @@ const uploadOnCloudinary = async function(localFilePath){
 
         const response = await cloudinary.uploader.upload(localFilePath,
             {
-                resource_type: "auto"
+                resource_type: "auto",
+                folder:"ytbackend"
             }
         );
 
@@ -34,7 +35,8 @@ const uploadOnCloudinary = async function(localFilePath){
 const deleteOnCloudinary = asyncHandler(async(url)=>{
     const publicId = url.split('/').pop().split(".")[0];
 
-    const response = await cloudinary.uploader.destroy(publicId);
+    const response = await cloudinary.uploader.destroy(`ytbackend/${publicId}`);
+    console.log(response)
     
     if(response.result !== "ok"){
         throw new ApiError(400, "something is wrong while deleting in file")

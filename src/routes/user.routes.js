@@ -1,5 +1,19 @@
 import {Router} from "express"
-import {userRegister, loginUser, logOut, refreshAccessToken, updateUserPassword, updateUserAvatar, getCurrentUser, updateUserCoverImage, updateUserDetails, deleteUser} from "../controllers/user.controllers.js"
+
+import {
+    userRegister, 
+    loginUser, 
+    logOut, 
+    refreshAccessToken, 
+    updateUserPassword, 
+    updateUserAvatar, 
+    getCurrentUser, 
+    updateUserCoverImage, 
+    updateUserDetails, 
+    deleteUser, 
+    getUserChannelProfile, 
+    getUserWatchHistory} from "../controllers/user.controllers.js"
+
 import {upload} from "../middlewares/multer.middleware.js"
 import { jwtVerfiy } from "../middlewares/auth.middleware.js";
 
@@ -30,11 +44,13 @@ router.route("/current-user").get(jwtVerfiy ,getCurrentUser)
 
 router.route("/update-details").patch(jwtVerfiy, updateUserDetails)
 
-router.route("/update-avatar").patch(upload.single("avatar"), jwtVerfiy, updateUserAvatar)
+router.route("/update-avatar").patch( jwtVerfiy, upload.single("avatar"), updateUserAvatar)
 
-router.route("/update-coverImage").patch(upload.single("coverImage"), jwtVerfiy, updateUserCoverImage)
+router.route("/update-coverImage").patch( jwtVerfiy, upload.single("coverImage"), updateUserCoverImage)
 
 router.route("/delete-account").delete(jwtVerfiy, deleteUser)
 
+router.route("/channel/:username").get(jwtVerfiy, getUserChannelProfile)
 
+routes.route("/watched-history").get(jwtVerfiy, getUserWatchHistory)
 export default router;
