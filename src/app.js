@@ -18,7 +18,7 @@ app.use(cookieParser())
 import userRoutes from "./routes/user.routes.js"
 
 app.use("/api/v1/user", userRoutes)
-app.get("/message",(req, res)=>{
-    res.send(`its's working`)
-})
+
+import subscriptionRoutes from "./routes/subscription.routes.js"
+app.use("/api/v1/subscription",subscriptionRoutes)
 export {app}

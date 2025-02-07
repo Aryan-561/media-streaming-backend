@@ -52,5 +52,5 @@ router.route("/delete-account").delete(jwtVerfiy, deleteUser)
 
 router.route("/channel/:username").get(jwtVerfiy, getUserChannelProfile)
 
-routes.route("/watched-history").get(jwtVerfiy, getUserWatchHistory)
+router.route("/watched-history").get(jwtVerfiy, getUserWatchHistory)
 export default router;
