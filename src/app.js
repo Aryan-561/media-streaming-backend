@@ -16,9 +16,11 @@ app.use(express.static("public"));
 app.use(cookieParser())
 
 import userRoutes from "./routes/user.routes.js"
+import subscriptionRoutes from "./routes/subscription.routes.js"
+import videosRoutes from "./routes/video.routes.js"
 
 app.use("/api/v1/user", userRoutes)
-
-import subscriptionRoutes from "./routes/subscription.routes.js"
 app.use("/api/v1/subscription",subscriptionRoutes)
+app.use("/api/v1/videos", videosRoutes)
+
 export {app}

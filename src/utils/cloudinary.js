@@ -32,10 +32,10 @@ const uploadOnCloudinary = async function(localFilePath){
     }
 }
 
-const deleteOnCloudinary = asyncHandler(async(url)=>{
+const deleteOnCloudinary = async (url, type="image")=>{
     const publicId = url.split('/').pop().split(".")[0];
 
-    const response = await cloudinary.uploader.destroy(`ytbackend/${publicId}`);
+    const response = await cloudinary.uploader.destroy(`ytbackend/${publicId}`,{resource_type:type});
     console.log(response)
     
     if(response.result !== "ok"){
@@ -43,6 +43,6 @@ const deleteOnCloudinary = asyncHandler(async(url)=>{
     }
 
     
-})
+}
 
 export {uploadOnCloudinary, deleteOnCloudinary};

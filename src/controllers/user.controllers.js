@@ -257,6 +257,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "User Fetched successfully"));
 });
 
+
+
 const updateUserDetails = asyncHandler(async (req, res) => {
   // get data from req.body
   // validate it
@@ -284,6 +286,8 @@ const updateUserDetails = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "User details successfully"));
 });
+
+
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
   // get file throw multer

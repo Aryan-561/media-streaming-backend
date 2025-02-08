@@ -24,6 +24,9 @@ const toggleSubscription = asyncHandler(async(req, res)=>{
         throw new ApiError(404, "Channel not found!");
     }
 
+    console.log(userId)
+    console.log(channelId)
+
     if(userId == channelId){
         throw new ApiError(400, "Cann't subscribe own channel!")
     }
