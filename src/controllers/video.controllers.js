@@ -62,7 +62,7 @@ const uploadVideo = asyncHandler(async(req, res)=>{
         thumbnail:thumbnailFile.url,
         title,
         description,
-        duartion:String(videoFile.duration),
+        duration:String(videoFile.duration),
         owner:req.user?._id
     })
 
@@ -235,11 +235,27 @@ const togglePublicStatus = asyncHandler(async(req, res)=>{
 
 })
 
+
+const getAllVideo = asyncHandler(async(req, res)=>{
+
+    const { page = 1, limit = 5, query, sortBy, sortType, userId } = req.query
+
+    const allVideo = await Video.find({}).skip((page-1)*limit).limit(limit)
+
+    if(!allVideo){
+        throw new ApiError(400, "Failed to fetched the videos")
+    }
+
+    return res.status(200).json(new ApiResponse(200, allVideo, "Fetched videos Successfully"))
+
+})
+
 export {
     uploadVideo,
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublicStatus
+    togglePublicStatus,
+    getAllVideo
 }
 
