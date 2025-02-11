@@ -2,7 +2,7 @@ import { ApiError } from "../utils/ApiErr.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {Tweet} from "../models/tweet.model.js"
-import { isValidObjectId } from "mongoose";
+import mongoose,{ isValidObjectId } from "mongoose";
 
 
 
@@ -22,6 +22,7 @@ const createTweet = asyncHandler(async(req, res)=>{
     // get content from req.body
     // validate it
     // create a tweet object - create entry in db
+    // extract owner details through populate
     // retuen res
 
     const {content} = req.body
@@ -30,10 +31,12 @@ const createTweet = asyncHandler(async(req, res)=>{
         throw new ApiError(400, "Content is required!");
     }
 
-    const tweet = await Tweet.create({
+    const newTweet = await Tweet.create({
         content,
         owner:req.user?._id
     })
+
+    const tweet = await Tweet.findById(newTweet._id).populate("owner", "username fullName avatar")
 
     if(!tweet){
         throw new ApiError(400, "Failed to create a tweet!")
@@ -50,7 +53,7 @@ const getTweet = asyncHandler(async(req, res)=>{
 
     await validateTweetId(tweetId)
 
-    const tweet = await Tweet.findById(tweetId)
+    const tweet = await Tweet.findById(tweetId).populate("owner", "username fullName avatar").populate("owner", "username fullName avatar")
     
     if(!tweet){
         throw new ApiError(404, "Tweet not Found!")
@@ -104,7 +107,7 @@ const updateTweet = asyncHandler(async(req, res)=>{
         {
             new:true
         }
-    )
+    ).populate("owner", "username avatar fullName")
 
     if(!tweet){
         throw new ApiError(400, "Failed to updating the tweet")
@@ -114,9 +117,63 @@ const updateTweet = asyncHandler(async(req, res)=>{
 
 })
 
+const getUserTweets = asyncHandler(async(req, res)=>{
+    const {userId} = req.params
+    if(!userId){
+        throw new ApiError(400, "userId is required")
+    }
+
+    if(!isValidObjectId(userId)){
+        throw new ApiError(400, "invalid userId" )
+    }
+
+    const tweets = await Tweet.aggregate([
+        {
+            $match:{
+                owner:new mongoose.Types.ObjectId(userId)
+            }
+        },
+        {
+            $lookup:{
+                from:"users",
+                localField:"owner",
+                foreignField:"_id",
+                as:"owner",
+                pipeline:[{
+                    $project:{
+                        username:1,
+                        avatar:1,
+                        fullName:1
+                    }
+                }]
+            }
+        },
+        {
+            $unwind:"$owner"
+        },
+        {
+            $project:{
+                _id:0,
+                tweetId:"$_id",
+                content:1,
+                createdAt:1,
+                owner:1
+            }
+        }
+    ])
+
+    if(!tweets){
+        throw new ApiError(400, "Failed to fetched the tweets")
+    }
+
+    return res.status(200).json(new ApiResponse(200, tweets, "Successfully fetched tweets"))
+})
+
 export {
     createTweet,
     getTweet,
     deleteTweet,
-    updateTweet 
+    updateTweet,
+    getUserTweets  
+
 }
