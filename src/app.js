@@ -19,9 +19,11 @@ import userRoutes from "./routes/user.routes.js"
 import subscriptionRoutes from "./routes/subscription.routes.js"
 import videosRoutes from "./routes/video.routes.js"
 import tweetRoutes from "./routes/tweet.routes.js"
+import commentsRouter from "./routes/comment.routes.js"
 
 app.use("/api/v1/user", userRoutes)
 app.use("/api/v1/subscription",subscriptionRoutes)
 app.use("/api/v1/videos", videosRoutes)
 app.use("/api/v1/tweet" ,tweetRoutes)
+app.use("/api/v1/comments", commentsRouter)
 export {app}
