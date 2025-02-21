@@ -3,6 +3,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Comment } from "../models/comment.model.js";
 import mongoose, { isValidObjectId } from "mongoose";
+import { Video } from "../models/video.model.js";
+import { Like } from "../models/like.model.js";
+import { Tweet } from "../models/tweet.model.js";
 
 const validateId = async(id)=>{
     if(!id){
@@ -44,7 +47,10 @@ const getVideoComments = asyncHandler(async(req, res)=>{
     const {page=1, limit=5}= req.query
     await validateId(videoId)
 
-    
+    const isVideo = await Video.findById(videoId)
+    if(!isVideo){
+        throw new ApiError(404, "Video not found!")
+    }
 
     const videoComments = await Comment.aggregate([
         {
@@ -124,6 +130,11 @@ const getTweetComments = asyncHandler(async(req, res)=>{
     const {page=1, limit=5} = req.query
     await validateId(tweetId)
 
+    const isTweet = await Tweet.findById(tweetId)
+    if(!isTweet){
+        throw new ApiError(404, "Tweet not Found!")
+    }
+
     const tweetComments = await Comment.aggregate([
         {
             $match:{
@@ -198,20 +209,44 @@ const updateComment = asyncHandler(async(req, res)=>{
 
 
 const deleteComment = asyncHandler(async(req, res)=>{
-    const {commentId} = req.params
-    await validateId(commentId)
-    
-    const commentDetails = await Comment.findById(commentId)
-    if(!commentDetails){
-        throw new ApiError(404, "Comment not Found!")
-    }
+   
+    const session = await mongoose.startSession()
+    session.startTransaction()
 
-    if(!commentDetails.owner.equals(req.user?._id)){
-        throw new ApiError(401, "Unauthorized request!")
-    }
+    try {
+     const {commentId} = req.params
+     await validateId(commentId)
+     
+     const commentDetails = await Comment.findById(commentId).session(session)
+     
+     if(!commentDetails){
+         throw new ApiError(404, "Comment not Found!")
+     }
+ 
+     if(!commentDetails.owner.equals(req.user?._id)){
+         throw new ApiError(401, "Unauthorized request!")
+     }
+     
+     // delete comment
+     await Comment.deleteOne({_id:commentId}).session(session)
 
-    await Comment.deleteOne({_id:commentId})
-    return res.status(200).json(new ApiResponse(200, {}, "Comment deleted successfully."))
+     // delete comment's likes
+     await Like.deleteMany({comment:commentId}).session(session)
+
+     await session.commitTransaction()
+     session.endSession()
+
+
+     return res.status(200).json(new ApiResponse(200, {}, "Comment deleted successfully."))
+
+   } catch (error) {
+
+    await session.abortTransaction()
+    session.endSession()
+
+    throw new ApiError(error.status || 500, error.message || "Internal Server Error");
+
+   }
 })
 
 
