@@ -3,6 +3,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {Tweet} from "../models/tweet.model.js"
 import mongoose,{ isValidObjectId } from "mongoose";
+import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 
 
 
@@ -64,24 +66,50 @@ const getTweet = asyncHandler(async(req, res)=>{
 })
 
 const deleteTweet = asyncHandler(async(req, res)=>{
+    const session = await mongoose.startSession()
+    session.startTransaction()
+
+    try {
+        const {tweetId} = req.params
+        
+        await validateTweetId(tweetId)
     
-    const {tweetId} = req.params
+        const tweet = await Tweet.findById(tweetId).session(session)
     
-    await validateTweetId(tweetId)
+        if(!tweet){
+            throw new ApiError(404, "Tweet not Found!")
+        }
+    
+        if(!(tweet.owner.equals(req.user?._id))){
+            throw new ApiError(401,"Unauthorized request")
+        }
 
-    const tweet = await Tweet.findById(tweetId)
+        // deleting all likes on the tweet
+        await Like.deleteMany({tweet:tweet._id}).session(session)
 
-    if(!tweet){
-        throw new ApiError(404, "Tweet not Found!")
+        // find all comment's on the tweet
+        const comments = await Comment.find({tweet:tweet._id}).select("_id").session(session)
+
+        const commentsIds = comments.map(comment=>comment._id)
+
+        // deleting all likes on the comments
+        await Like.deleteMany({comment:{$in:commentsIds}}).session(session)
+
+        // deleting all comments on the tweets 
+        await Comment.deleteMany({tweet:tweet._id}).session(session)
+    
+        await Tweet.deleteOne({_id:tweetId}).session(session)
+
+        await session.commitTransaction()
+    
+        return res.status(200).json(new ApiResponse(200, {},"Tweet deleted successfully."))
+    
+    } catch (error) {
+        await session.abortTransaction()
+        throw new ApiError(error.status, error.message)
+    } finally{
+        session.endSession()
     }
-
-    if(!(tweet.owner.equals(req.user?._id))){
-        throw new ApiError("Only owner delete this tweet")
-    }
-
-    await Tweet.deleteOne({_id:tweetId})
-
-    return res.status(200).json(new ApiResponse(200, {},"Tweet deleted successfully."))
 
     
 

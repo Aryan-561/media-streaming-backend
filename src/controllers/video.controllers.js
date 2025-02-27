@@ -3,6 +3,8 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import {ApiError} from "../utils/ApiErr.js"
 import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js"
 import { Video } from "../models/video.model.js"
+import { Like } from "../models/like.model.js"
+import {Comment} from "../models/comment.model.js"
 import mongoose, { isValidObjectId } from "mongoose"
 
 
@@ -115,10 +117,6 @@ const updateVideo = asyncHandler(async(req, res)=>{
         }
     
         
-        console.log(video.owner)
-        console.log(req.user?._id)
-        console.log(video.owner == req.user?._id)
-        
         if(!( video.owner.equals(req.user?._id) )){
             throw new ApiError(401, "only owner of the video update it")
         }
@@ -183,6 +181,26 @@ const deleteVideo = asyncHandler(async(req, res)=>{
             throw new ApiError(404, "video not found")
         }
 
+        if(!(video.owner.equals(req.user?._id))){
+            throw new ApiError(401,"Unauthorized request!")
+        }
+
+        // Deleting all likes on the video
+        await Like.deleteMany({video:video._id}).session(session)
+
+        // Find the all comments on the video
+        const comments = await Comment.find({video:video._id}).select("_id").session(session)
+
+        // get all comment's Id
+        const commentsIds = comments.map(comment=>comment._id)
+
+        // Deleting all likes on the comments
+        await Like.deleteMany({comment:{$in:commentsIds}}).session(session)
+
+        // Deleting all comments on the video
+        await Comment.deleteMany({video:video._id}).session(session)
+        
+
         if(video.videoFile){
             await deleteOnCloudinary(video.videoFile, "video")
         }
@@ -190,6 +208,7 @@ const deleteVideo = asyncHandler(async(req, res)=>{
         if(video.thumbnail){
             await deleteOnCloudinary(video.thumbnail)
         }
+
     
         await Video.deleteOne({_id:videoId},{session})
 
