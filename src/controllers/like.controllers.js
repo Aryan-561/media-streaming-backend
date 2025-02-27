@@ -3,6 +3,9 @@ import { ApiError } from "../utils/ApiErr.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { Like } from "../models/like.model.js";
+import { Video } from "../models/video.model.js";
+import { Comment } from "../models/comment.model.js";
+import { Tweet } from "../models/tweet.model.js";
 
 
 const validateId = async(id)=>{
@@ -21,8 +24,13 @@ const toggleVideoLike = asyncHandler(async(req, res)=>{
     const {videoId} = req.params
     await validateId(videoId)
 
+    const video = await Video.findById(videoId)
+    if(!video){
+        throw new ApiError(404, "video not found!")
+    }
+
     const isLiked = await Like.findOne({
-        video: new mongoose.Types.ObjectId(videoId),
+        video: video._id,
         likedBy:req.user?._id
     })
     
@@ -33,7 +41,7 @@ const toggleVideoLike = asyncHandler(async(req, res)=>{
 
     const likeVideo = await Like.create({
         likedBy:req.user?._id,
-        video: new mongoose.Types.ObjectId(videoId)
+        video: video._id
     })
 
     if(!likeVideo){
@@ -43,13 +51,19 @@ const toggleVideoLike = asyncHandler(async(req, res)=>{
     return res.status(200).json(new ApiResponse(200, likeVideo, "liked the video successfully."))
 })
 
+
 // tweet like
 const toggleTweetLike = asyncHandler(async(req, res)=>{
     const {tweetId} = req.params
     await validateId(tweetId)
 
+    const tweet = await Tweet.findById(tweetId)
+    if(!tweet){
+        throw new ApiError(404, "tweet not found!")
+    }
+
     const isLiked = await Like.findOne({
-        tweet: new mongoose.Types.ObjectId(tweetId),
+        tweet:tweet._id,
         likedBy:req.user?._id
     })
     
@@ -60,7 +74,7 @@ const toggleTweetLike = asyncHandler(async(req, res)=>{
 
     const likeTweet = await Like.create({
         likedBy:req.user?._id,
-        tweet: new mongoose.Types.ObjectId(tweetId)
+        tweet:tweet._id
     })
 
     if(!likeTweet){
@@ -76,8 +90,13 @@ const toggleCommentLike = asyncHandler(async(req, res)=>{
     const {commentId} = req.params
     await validateId(commentId)
 
+    const comment = await Comment.findById(commentId)
+    if(!comment){
+        throw new ApiError(404, "comment not found!")
+    }
+
     const isLiked = await Like.findOne({
-        comment: new mongoose.Types.ObjectId(commentId),
+        comment:comment._id,
         likedBy:req.user?._id
     })
     
@@ -88,7 +107,7 @@ const toggleCommentLike = asyncHandler(async(req, res)=>{
 
     const likeComment = await Like.create({
         likedBy:req.user?._id,
-        comment: new mongoose.Types.ObjectId(commentId)
+        comment: comment._id
     })
 
     if(!likeComment){
