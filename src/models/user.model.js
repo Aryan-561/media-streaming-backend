@@ -51,8 +51,11 @@ const userSchema = new Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "Video"
         }
-    ]
-
+    ],
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
 },{timestamps:true});
 
 userSchema.pre("save", async function (next){

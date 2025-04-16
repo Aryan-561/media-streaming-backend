@@ -4,6 +4,7 @@ import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import sendMail from "../utils/sendmail.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId);
@@ -86,12 +87,61 @@ const userRegister = asyncHandler(async (req, res) => {
   if (!createUser) {
     throw new ApiError(500, "something went wrong while registering the user");
   }
+  //  welcome message
+  const emailToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_CODE, {
+    expiresIn: "1h",
+  });
+
+  const verificationUrl = `http://localhost:8000/api/v1/user/verify-email?token=${emailToken}`;
+
+  await sendMail({
+    to: email,
+    subject: "Verify Your Email",
+    // text: `Hi ${userName}, welcome to our platform! We're excited to have you join us.`,
+    // html: `<h1>Welcome, ${userName}!</h1><p>Thanks for registering on our app. We're excited to have you onboard.</p>`,
+    html: `
+    <h2>Hello ${username},</h2>
+    <p>We noticed you haven’t verified your email address yet. To complete your registration and start using your account, please verify your email.</p>
+    <p>Click the button below to confirm your email address:</p>
+
+    <a
+    href="${verificationUrl}"
+    style="display: inline-block; background-color: #007bff; color: #ffffff; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: bold;"
+    >
+    Verify Email
+    </a>
+
+    <p>If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
+    <p>${verificationUrl}</p>
+
+    <p style="margin-top: 30px;">If you didn’t create this account, you can safely ignore this email.</p>
+
+    <p>Best regards,<br>YourApp Team</p>
+`,
+  });
 
   return res
     .status(201)
     .json(new ApiResponse(200, createUser, "user registered successfully"));
 });
 
+const verifyMail = asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  try {
+    const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_CODE);
+    const user = await User.findById(decoded.userId);
+
+    if (!user) return res.status(404).send("User not found");
+    if (user.isVerified) return res.send("Email already verified");
+
+    user.isVerified = true;
+    await user.save();
+
+    res.send("Email verified successfully. You can now log in.");
+  } catch (err) {
+    res.status(400).send("Invalid or expired token");
+  }
+});
 const options = {
   httpOnly: true,
   secure: true,
@@ -132,6 +182,10 @@ const loginUser = asyncHandler(async (req, res) => {
   const loggedUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
+
+  if (loggedUser.isVerified === false) {
+    throw new ApiError(400, "please verify your mail first")
+  }
 
   return res
     .status(200)
@@ -512,12 +566,12 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if(!user.length){
+  if (!user.length) {
     throw new ApiError(500, "Failed to Fetched watched history")
   }
 
   return res.status(200)
-         .json(new ApiResponse(200, user[0].watchedVideo, "User's watched history fetched successfully"));
+    .json(new ApiResponse(200, user[0].watchedVideo, "User's watched history fetched successfully"));
 });
 
 export {
@@ -533,4 +587,5 @@ export {
   deleteUser,
   getUserChannelProfile,
   getUserWatchHistory,
+  verifyMail
 };
