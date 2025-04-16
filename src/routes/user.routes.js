@@ -7,6 +7,7 @@ import {
     refreshAccessToken, 
     updateUserPassword, 
     updateUserAvatar, 
+    verifyMail,
     getCurrentUser, 
     updateUserCoverImage, 
     updateUserDetails, 
@@ -53,4 +54,5 @@ router.route("/delete-account").delete(jwtVerfiy, deleteUser)
 router.route("/channel/:username").get(jwtVerfiy, getUserChannelProfile)
 
 router.route("/watched-history").get(jwtVerfiy, getUserWatchHistory)
+router.route("/verify-email").post( verifyMail)
 export default router;
